@@ -1,0 +1,145 @@
+import java.nio.file.Paths
+
+buildscript {
+    repositories {
+        flatDir { dir "${rootDir}/libs" }
+        maven { url 'https://jitpack.io' }
+    }
+    dependencies {
+        classpath('com.witcraft:diff-coverage-compliance:1.0')
+        classpath('com.github.form-com.diff-coverage-gradle:diff-coverage:0.9.1') {
+            exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
+            exclude group: 'org.apache.logging.log4j', module: 'log4j-api'
+            exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
+            exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+        }
+        constraints {
+            classpath('org.apache.logging.log4j:log4j-slf4j-impl:2.17.2') {
+                because 'version 2.11.0 pulled in from "diff-coverage" has associated CVEs'
+            }
+            classpath('org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.20-RC2') {
+                because 'version 1.4.31 pulled in from "diff-coverage" has associated CVEs'
+            }
+        }
+    }
+}
+
+plugins {
+    id 'groovy-gradle-plugin'
+    id 'maven-publish'
+    id 'com.gradle.plugin-publish' version '1.0.0-rc-1'
+}
+apply plugin: 'com.witcraft.diff-coverage-compliance'
+
+group 'com.witcraft'
+version '1.0'
+
+pluginBundle {
+
+}
+
+gradlePlugin {
+    automatedPublishing = false
+    plugins {
+        diffCoverageCompliancePlugin {
+            id = 'com.witcraft.diff-coverage-compliance'
+            implementationClass = 'com.witcraft.diffcoveragecompliance.DiffCoverageCompliancePlugin'
+            displayName = 'Diff-Coverage Compliance Plugin'
+            description = ''
+        }
+    }
+}
+
+repositories {
+    flatDir { dir "${rootDir}/libs" }
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.codehaus.groovy:groovy-all:3.0.9'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs.add '-Xlint:unchecked'
+}
+
+test {
+    //finalizedBy tasks.named('jacocoTestReport')
+    useJUnitPlatform()
+}
+
+tasks.named('build').configure { Task task ->
+    task.mustRunAfter tasks.named('clean')
+}
+
+
+diffCoverageCompliance {
+    reportName = project.projectDir.name.toUpperCase()
+    reports {
+        baseReportDir = Paths.get('build', 'reports', 'jacoco')
+        html = true
+        csv = false
+        xml = true
+        fullCoverageReport = false
+    }
+    violationRules {
+        //failOnViolation = true
+        minLines = 0.501
+        //minBranches = 0.5
+        //minInstructions = 0.5
+        //minComplexity = 0.5
+        //minClasses = 0.5
+        //minMethods = 0.5
+    }
+}
+
+
+tasks.register('deploy').configure {
+    final String DEPLOY_TO = 'deployTo'
+    dependsOn tasks.matching { (it as Task).name.startsWith(DEPLOY_TO) && (it as Task).name.size() > DEPLOY_TO.size() }
+}
+
+tasks.register('deployToAnsi', Copy).configure { Copy task ->
+    dependsOn tasks.named('clean'), tasks.named('build')
+
+    from project.files { fileTree(project.layout.buildDirectory.dir('libs')).include('*.jar') }
+    into project.projectDir.toPath().parent.resolve('ansi').resolve('libs')
+
+    doLast {
+        logger.quiet "Deployed to \"${task.destinationDir}\""
+    }
+}
+tasks.register('deployToSelf', Copy).configure { Copy task ->
+    dependsOn tasks.named('clean'), tasks.named('build')
+
+    from project.files { fileTree(project.layout.buildDirectory.dir('libs')).include('*.jar') }
+    into project.projectDir.toPath().resolve('libs')
+
+    doLast {
+        logger.quiet "Deployed to \"${task.destinationDir}\""
+    }
+}
+
+tasks.register('showGraph').configure { Task thisTask ->
+    if (gradle.startParameter.taskNames.contains(thisTask.name)) {
+        def handleDisplayTaskGraph = { String messageVariant = '' ->
+            List<Task> graphTasks = gradle.taskGraph.allTasks
+            int maxFieldSize = String.valueOf(graphTasks.size()).length()
+
+            logger.quiet "Gradle Task Execution Graph${messageVariant}:"
+            graphTasks.eachWithIndex { Task task, int taskIndex ->
+                String taskNumberField = "${(taskIndex + 1)}.".padLeft(maxFieldSize + 1)
+                logger.quiet "    ${taskNumberField}  ${task.path}"
+            }
+        }
+        gradle.taskGraph.whenReady { handleDisplayTaskGraph(' (immediately before Execution phase)') }
+        doLast { handleDisplayTaskGraph() }
+    }
+}
