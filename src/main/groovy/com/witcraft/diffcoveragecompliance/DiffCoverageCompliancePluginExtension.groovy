@@ -131,9 +131,13 @@ class Reports {
 
     Reports baseReportDir(Path baseReportDir) { setBaseReportDir(baseReportDir) }
 
+    Reports baseReportDir(File baseReportDir) { setBaseReportDir(baseReportDir) }
+
     Reports setBaseReportDir(String baseReportDir) { this.tap { it.@baseReportDir.set baseReportDir } }
 
     Reports setBaseReportDir(Path baseReportDir) { this.tap { it.@baseReportDir.set baseReportDir.toString() } }
+
+    Reports setBaseReportDir(File baseReportDir) { this.tap { it.@baseReportDir.set baseReportDir.toPath().toString() } }
 
     @Override
     String toString() {
@@ -151,6 +155,7 @@ class ViolationRules {
     private static final List<String> fieldsToString = ['minInstructions', 'minBranches', 'minLines', 'minComplexity', 'minMethods', 'minClasses', 'failOnViolation']
 
     private Map<CoverageMetric, Double> metricRules
+
     @Input
     boolean failOnViolation
 
