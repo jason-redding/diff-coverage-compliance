@@ -1,19 +1,34 @@
 # Diff-Coverage Compliance Plugin
 
-`Diff-Coverage Compliance Plugin` uses [Diff Coverage Gradle Plugin](https://github.com/form-com/diff-coverage-gradle) to compute code coverage of only modified code, then generates a compliance report.
+`Diff-Coverage Compliance Plugin` uses the [Diff Coverage Gradle Plugin (com.form.coverage.gradle.DiffCoverageTask)](https://github.com/form-com/diff-coverage-gradle) to compute code coverage of only modified code, then generates a compliance report.
 
 Why should I use it?
-* Automatically configures `diffCoverage` task _(from [com.form.diff-coverage](https://github.com/form-com/diff-coverage-gradle))_ based on working tree and staged changes.
-* Supports **ALL** violation rules (instructions, branches, lines, complexity, methods, classes).
+
+* Automatically configures `diffCoverage` task  based on working tree and staged changes.
+* Supports violation rules for **ALL** JaCoCo report metrics (`minInstructions`, `minBranches`, `minLines`, `minComplexity`, `minMethods`, and `minClasses`).
+
 
 ## Configuration
 
-<details open="open">
-<summary>Groovy</summary>
-
 ```groovy
 diffCoverageCompliance {
+    reportName = project.projectDir.name
+    diffBase = project.properties.getOrDefault('diffCoverageCompliance.diffBase', 'main')
+    diffOutputPath = Paths.get("${project.buildDir}", 'diffCoverageCompliance', 'patch.diff')
+  
+    reports {
+        baseReportDir = Paths.get('build', 'reports', 'jacoco')
+    
+        fullCoverageReport = false
+    
+        csv = false
+        xml = false
+        html = false
+    }
+  
     violationRules {
+        failOnViolation = false
+
         minInstructions: 0.75
         minBranches: 0.75
         minLines: 0.75
@@ -23,13 +38,14 @@ diffCoverageCompliance {
     }
 }
 ```
-</details>
+
 
 ### Properties
 
-By default, a new task is added (`diffCoverageCompliance`) in addition to the required `diffCoverage` task.
-To change this behavior and have the `diffCoverage` task enhanced by this plugin (effectively replacing it),
+By default, a new `diffCoverageCompliance` task is added in addition to the required `diffCoverage` task.
+To change this behavior and instead have the `diffCoverage` task enhanced by this plugin (effectively replacing it),
 set project property `diffCoverageCompliance.replaceDiffCoverage` to `true`.
+
 ```properties
 diffCoverageCompliance.replaceDiffCoverage = true       // default is false
 ```
@@ -39,3 +55,13 @@ diffCoverageCompliance.replaceDiffCoverage = true       // default is false
 ```shell
 ./gradlew diffCoverageCompliance
 ```
+
+### Command-line Options
+
+> Note: The `diffCoverageCompliance.replaceDiffCoverage` property must be set to `false` in order to use any command-line options.
+> This is because the command-line options apply only to the `diffCoverageCompliance` task --- not the `diffCoverage` task.
+
+```shell
+./gradlew help --task diffCoverageCompliance
+```
+
