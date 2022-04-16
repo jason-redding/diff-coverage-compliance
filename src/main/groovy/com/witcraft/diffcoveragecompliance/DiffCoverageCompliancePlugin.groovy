@@ -104,11 +104,10 @@ class DiffCoverageCompliancePlugin implements Plugin<Project> {
         int taskIndex = startArgs.indexOf(taskName)
         if (taskIndex < 0) {
             return false
-        } else if (taskIndex < 2) {
-            return true
-        } else {
-            return (startArgs.subList(taskIndex - 2, taskIndex) != ['help', '--task'])
+        } else if (taskIndex >= 2) {
+            return !('help'.equalsIgnoreCase(startArgs[taskIndex - 2]) && '--task' == startArgs[taskIndex - 1])
         }
+        return true
     }
 
     static <T> T resolveProvided(T value) { value }
