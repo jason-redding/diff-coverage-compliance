@@ -79,6 +79,10 @@ tasks.named('build').configure { Task task ->
     task.mustRunAfter tasks.named('clean')
 }
 
+tasks.named('wrapper').configure {
+    gradleVersion = '7.4.2'
+    distributionType = Wrapper.DistributionType.ALL
+}
 
 diffCoverageCompliance {
     reportName = project.projectDir.name.toUpperCase()
