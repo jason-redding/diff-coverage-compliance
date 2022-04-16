@@ -45,7 +45,7 @@ gradlePlugin {
             id = 'com.witcraft.diff-coverage-compliance'
             implementationClass = 'com.witcraft.diffcoveragecompliance.DiffCoverageCompliancePlugin'
             displayName = 'Diff-Coverage Compliance Plugin'
-            description = ''
+            description = 'Display Code Coverage for only modified code'
         }
     }
 }
@@ -95,9 +95,9 @@ diffCoverageCompliance {
     }
     violationRules {
         //failOnViolation = true
-        minLines = 0.501
-        //minBranches = 0.5
         //minInstructions = 0.5
+        //minBranches = 0.5
+        minLines = 0.501
         //minComplexity = 0.5
         //minClasses = 0.5
         //minMethods = 0.5
@@ -107,7 +107,7 @@ diffCoverageCompliance {
 
 tasks.register('deploy').configure {
     final String DEPLOY_TO = 'deployTo'
-    dependsOn tasks.matching { (it as Task).name.startsWith(DEPLOY_TO) && (it as Task).name.size() > DEPLOY_TO.size() }
+    dependsOn tasks.matching { Task task -> task.name.startsWith(DEPLOY_TO) && task.name.size() > DEPLOY_TO.size() }
 }
 
 tasks.register('deployToAnsi', Copy).configure { Copy task ->
